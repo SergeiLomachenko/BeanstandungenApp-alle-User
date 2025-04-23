@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Ergebnisse herunterladen</title>
+  <style>
+    body {
+      background: #f9f9f9;
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      max-width: 600px;
+      margin: 50px auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      text-align: center;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    a.button {
+      display: inline-block;
+      margin: 10px;
+      padding: 10px 20px;
+      background: #28a745;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 5px;
+    }
+    a.button:hover {
+      background: #218838;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Ergebnisse der Verarbeitung</h1>
+    <p>Falls der automatische Download nicht startet, klicken Sie bitte auf die folgenden Schaltflächen:</p>
+    {% for file in results %}
+      <a class="button" href="{{ url_for('download_file', filename=file) }}">{{ file }}</a>
+    {% endfor %}
+  </div>
+  <script>
+    window.onload = function() {
+      {% for file in results %}
+        var link = document.createElement('a');
+        link.href = "{{ url_for('download_file', filename=file) }}";
+        link.download = "";
+        document.body.appendChild(link);
+        link.click();
+      {% endfor %}
+    };
+  </script>
+</body>
+</html>

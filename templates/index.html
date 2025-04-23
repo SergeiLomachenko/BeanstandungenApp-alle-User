@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Dateien hochladen</title>
+  <style>
+    body {
+      background: #f0f8ff;
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      max-width: 500px;
+      margin: 50px auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    /* Стили для кастомной кнопки выбора файла */
+    .file-input-wrapper {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+      margin-top: 10px;
+    }
+    .btn-file {
+      border: 2px solid #007bff;
+      color: #007bff;
+      background-color: #fff;
+      padding: 8px 20px;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .file-input-wrapper input[type="file"] {
+      font-size: 100px;
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .file-name {
+      display: block;
+      margin-top: 5px;
+      font-style: italic;
+      color: #555;
+    }
+    button.submit-btn {
+      margin-top: 20px;
+      width: 100%;
+      padding: 10px 0;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button.submit-btn:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Dateien hochladen</h1>
+    <form action="/" method="post" enctype="multipart/form-data">
+      <label>Wählen Sie eine PDF-Datei (Invoice):</label>
+      <div class="file-input-wrapper">
+        <button type="button" class="btn-file" onclick="document.getElementById('invoice').click()">Datei auswählen</button>
+        <input type="file" id="invoice" name="invoice" accept="application/pdf" onchange="updateFileName('invoice')" required>
+      </div>
+      <span id="invoice-name" class="file-name"></span>
+      
+      <label>Wählen Sie eine Excel-Datei (CA3):</label>
+      <div class="file-input-wrapper">
+        <button type="button" class="btn-file" onclick="document.getElementById('ca3').click()">Datei auswählen</button>
+        <input type="file" id="ca3" name="ca3" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="updateFileName('ca3')" required>
+      </div>
+      <span id="ca3-name" class="file-name"></span>
+      
+      <label>Wählen Sie eine Excel-Datei (RRM):</label>
+      <div class="file-input-wrapper">
+        <button type="button" class="btn-file" onclick="document.getElementById('rrm').click()">Datei auswählen</button>
+        <input type="file" id="rrm" name="rrm" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="updateFileName('rrm')" required>
+      </div>
+      <span id="rrm-name" class="file-name"></span>
+      
+      <button type="submit" class="submit-btn">Dateien verarbeiten</button>
+    </form>
+  </div>
+  
+  <script>
+    function updateFileName(inputId) {
+      var input = document.getElementById(inputId);
+      var fileNameSpan = document.getElementById(inputId + '-name');
+      if (input.files.length > 0) {
+         fileNameSpan.textContent = input.files[0].name;
+      } else {
+         fileNameSpan.textContent = '';
+      }
+    }
+  </script>
+</body>
+</html>

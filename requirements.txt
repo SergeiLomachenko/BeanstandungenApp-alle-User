@@ -1,0 +1,7 @@
+Flask
+PyMuPDF
+pdfplumber
+xlsxwriter
+pymysql
+openpyxl
+pandas
