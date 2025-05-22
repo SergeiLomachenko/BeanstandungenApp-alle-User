@@ -4,7 +4,7 @@ import sys
 from flask import Flask, render_template, request, redirect, flash, url_for, send_file
 
 app = Flask(__name__)
-app.secret_key = 'dein_geheimer_schluessel'  # Секретный ключ для вашего приложения
+app.secret_key = 'dein_geheimer_schluessel' 
 
 # Убираем загрузку конфигурации, так как файл pdf4.py используется для логики, а не настроек
 # app.config.from_pyfile(os.path.join(os.path.dirname(__file__), 'pdf4.py'))

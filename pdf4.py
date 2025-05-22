@@ -44,13 +44,13 @@ for page_text in pages[1:]:  # Analyse von Seiten, gestartet mit der zweiten
     
     for i, line in enumerate(lines):
         # Raw mit Fahrzeugsinfo festlegen, entsprechend den Ziffern
-        if any(keyword in line for keyword in ["BM", "VW", "DC", "FI", "NI", "ME", "VF", "VX", "GF", "PS", "EF", "TX", "AR", "RN", "WBA", "TMB", "VSS"]):
+        if any(keyword in line for keyword in ["BM", "VW", "DC", "FI", "NI", "ME", "VF", "VX", "GF", "PS", "EF", "TX", "AR", "RN", "WBA", "TMB", "VSS", "EU", "XX", "DA", "FO"]):
             line_parts = line.split()
             if len(line_parts) < 5:
                 continue  # When the raw is too short
 
             ziffer = line_parts[0]
-            if ziffer.strip() not in ["BM", "VW", "DC", "FI", "NI", "ME", "VF", "VX", "GF", "PS", "EF", "TX", "AR", "RN", "WBA", "TMB", "VSS"]:
+            if ziffer.strip() not in ["BM", "VW", "DC", "FI", "NI", "ME", "VF", "VX", "GF", "PS", "EF", "TX", "AR", "RN", "WBA", "TMB", "VSS", "EU", "XX", "DA", "FO"]:
                 continue
 
             ziffer = line_parts[0]
@@ -84,7 +84,7 @@ for page_text in pages[1:]:  # Analyse von Seiten, gestartet mit der zweiten
             # LEERFAHRT kalkulieren
             leerfahrt = ""
             for j in range(i+1, min(i+6, len(lines))):
-                if any(keyword in lines[j] for keyword in ["BM", "VW", "DC", "FI", "NI", "ME", "VF", "VX", "GF", "PS", "EF", "TX", "AR", "RN", "WBA", "TMB", "VSS"]):
+                if any(keyword in lines[j] for keyword in ["BM", "VW", "DC", "FI", "NI", "ME", "VF", "VX", "GF", "PS", "EF", "TX", "AR", "RN", "WBA", "TMB", "VSS", "EU", "XX", "DA", "FO"]):
                     break  # wenn neue dann abbrechen
                 if "/ LEERFAHRT" in lines[j]:
                     leerfahrt = "OK"

@@ -43,7 +43,7 @@
       <a class="button" href="{{ url_for('download_file', filename=file) }}">{{ file }}</a>
     {% endfor %}
   </div>
-  <script>
+  <!-- <script>
     window.onload = function() {
       {% for file in results %}
         var link = document.createElement('a');
@@ -53,6 +53,6 @@
         link.click();
       {% endfor %}
     };
-  </script>
+  </script> -->
 </body>
 </html>
