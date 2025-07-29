@@ -1,119 +1,136 @@
 import os
 import subprocess
 import sys
-from flask import Flask, render_template, request, redirect, flash, url_for, send_file
+from flask import Flask, render_template, request, redirect, flash, url_for, send_file, after_this_request
+import tempfile
+import shutil
+import uuid
 
 app = Flask(__name__)
-app.secret_key = 'dein_geheimer_schluessel' 
+app.secret_key = 'dein_geheimer_schluessel'
 
-# Убираем загрузку конфигурации, так как файл pdf4.py используется для логики, а не настроек
-# app.config.from_pyfile(os.path.join(os.path.dirname(__file__), 'pdf4.py'))
+BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
+LOG_FILE   = os.path.join(BASE_DIR, 'analysis.log')
 
-# Определяем базовую директорию проекта (где хранятся входные и выходные файлы)
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Создаем только директорию для логов
+os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
+
+
+def log(message: str):
+    """Schreibt einen Zeilen-Eintrag in analysis.log."""
+    with open(LOG_FILE, 'a', encoding='utf-8') as f:
+        f.write(message + '\n')
+
+
+def run_analysis_in_temp_dir(month: str, recl_file_path: str, grp_file_path: str, temp_dir: str) -> str | None:
+    """Führt die Analyse in einem temporären Verzeichnis durch."""
+    script = os.path.join(BASE_DIR, 'Reads_excel_columns.py')
+    log(f"\n=== Analyse starten für Monat {month} ===")
+    log(f"Temporäres Verzeichnis: {temp_dir}")
+
+    # Kopiere die hochgeladenen Dateien ins temporäre Verzeichnis
+    temp_recl = os.path.join(temp_dir, 'recl.xlsx')
+    temp_grp = os.path.join(temp_dir, 'grp.xlsx')
+    
+    shutil.copy2(recl_file_path, temp_recl)
+    if grp_file_path and os.path.exists(grp_file_path):
+        shutil.copy2(grp_file_path, temp_grp)
+
+    # Subprocess aufrufen
+    cmd = [sys.executable, script, month, '--recl', temp_recl]
+    if grp_file_path and os.path.exists(grp_file_path):
+        cmd.extend(['--grp', temp_grp])
+    
+    try:
+        result = subprocess.run(
+            cmd,
+            cwd=temp_dir,
+            capture_output=True,
+            text=True
+        )
+        log("--- stdout ---\n" + result.stdout)
+        log("--- stderr ---\n" + result.stderr)
+        log(f"Return code: {result.returncode}")
+        
+        if result.returncode != 0:
+            log("Script beendet mit Fehler!")
+            return None
+            
+    except Exception as e:
+        log("Subprocess-Fehler: " + str(e))
+        return None
+
+    # Ergebnisdatei finden und umbenennen
+    src = os.path.join(temp_dir, 'file2_filtered.xlsx')
+    result_filename = f'Ergebnis_{month}.xlsx'
+    dst = os.path.join(temp_dir, result_filename)
+
+    if os.path.exists(src):
+        try:
+            os.rename(src, dst)
+            log(f"Datei erstellt: {dst}")
+            return result_filename
+        except Exception as e:
+            log("Fehler beim Umbenennen: " + str(e))
+            return None
+    else:
+        log("file2_filtered.xlsx fehlt in temp_dir")
+        return None
 
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        # Получаем файлы из формы
-        invoice_file = request.files.get('invoice')
-        ca3_file = request.files.get('ca3')
-        rrm_file = request.files.get('rrm')
-        
-        # Проверка, что все необходимые файлы загружены
-        if not (invoice_file and ca3_file and rrm_file):
-            flash("Bitte laden Sie alle erforderlichen Dateien hoch.")
+        month     = request.form.get('month')
+        recl_file = request.files.get('recl')
+        grp_file  = request.files.get('grp')
+
+        if not month or not recl_file:
+            flash("Monat und Excel-Datei (recl) sind Pflicht.")
             return redirect(request.url)
-        
-        # Сохраняем загруженные файлы в BASE_DIR
-        invoice_path = os.path.join(BASE_DIR, 'invoice.pdf')
-        ca3_path = os.path.join(BASE_DIR, 'ca3.xlsx')
-        rrm_path = os.path.join(BASE_DIR, 'rrm.xlsx')
-        
-        invoice_file.save(invoice_path)
-        ca3_file.save(ca3_path)
-        rrm_file.save(rrm_path)
-        
-        # Вызываем функцию анализа, которая выполнит pdf4.py и обработает файлы
-        run_analysis()
-        
-        # Удаляем исходные файлы, так как они больше не нужны
-        for f in ['invoice.pdf', 'ca3.xlsx', 'rrm.xlsx']:
-            path = os.path.join(BASE_DIR, f)
-            if os.path.exists(path):
-                os.remove(path)
-        
-        # Перенаправляем пользователя на страницу загрузок
-        return redirect(url_for("download_page"))
-    
-    return render_template("index.html")
 
+        # Erstelle ein temporäres Verzeichnis für diese Anfrage
+        temp_dir = tempfile.mkdtemp(prefix=f'analysis_{month}_')
+        log(f"Temporäres Verzeichnis erstellt: {temp_dir}")
+        
+        try:
+            # Speichere hochgeladene Dateien temporär
+            recl_path = os.path.join(temp_dir, 'upload_recl.xlsx')
+            recl_file.save(recl_path)
+            
+            grp_path = None
+            if grp_file and grp_file.filename:
+                grp_path = os.path.join(temp_dir, 'upload_grp.xlsx')
+                grp_file.save(grp_path)
 
-def run_analysis():
-    """
-    Функция run_analysis() выполняет скрипт pdf4.py, который ожидается создать файлы:
-        file1.xlsx, file2.xlsx, file3.xlsx, file4.xlsx.
-    После выполнения эти файлы переименовываются в:
-        Gesamtinvoiceinfo.xlsx, Invoiceinfo.xlsx, Rechnungsprüfung.xlsx, Validierung.xlsx,
-    и остаются в BASE_DIR для последующего скачивания.
-    """
-    # Имена файлов, создаваемых pdf4.py
-    original_files = ['file1.xlsx', 'file2.xlsx', 'file3.xlsx', 'file4.xlsx']
-    # Новые имена для этих файлов
-    new_names = [
-        'Gesamtinvoiceinfo.xlsx', 
-        'Invoiceinfo.xlsx', 
-        'Rechnungsprüfung.xlsx', 
-        'Validierung.xlsx'
-    ]
-    
-    try:
-        result = subprocess.run(
-            [sys.executable, 'pdf4.py'],
-            cwd=BASE_DIR,
-            capture_output=True,
-            text=True
-        )
-        print("stdout:\n", result.stdout)
-        print("stderr:\n", result.stderr)
-        print("Return code:", result.returncode)
-    except Exception as ex:
-        print("Fehler beim Ausführen von pdf4.py:", ex)
-    
-    # Переименование и перемещение файлов
-    for original, new_name in zip(original_files, new_names):
-        src = os.path.join(BASE_DIR, original)
-        dst = os.path.join(BASE_DIR, new_name)
-        if os.path.exists(src):
+            # Führe Analyse durch
+            result_filename = run_analysis_in_temp_dir(month, recl_path, grp_path, temp_dir)
+            
+            if not result_filename:
+                flash("Analyse fehlgeschlagen. Schau in analysis.log.")
+                return redirect(request.url)
+
+            # Sende Ergebnisdatei
+            result_path = os.path.join(temp_dir, result_filename)
+            if os.path.exists(result_path):
+                return send_file(
+                    result_path, 
+                    as_attachment=True, 
+                    download_name=result_filename
+                )
+            else:
+                flash("Ergebnisdatei nicht gefunden.")
+                return redirect(request.url)
+                
+        finally:
+            # Lösche temporäres Verzeichnis und alle Dateien darin
             try:
-                os.replace(src, dst)
-                print(f"Datei {original} wurde in {new_name} umbenannt.")
+                shutil.rmtree(temp_dir)
+                log(f"Temporäres Verzeichnis gelöscht: {temp_dir}")
             except Exception as e:
-                print(f"Fehler beim Umbenennen der Datei {original}: {e}")
-        else:
-            print(f"Ausgabedatei {original} wurde nicht gefunden.")
+                log(f"Fehler beim Löschen des temporären Verzeichnisses: {e}")
 
-
-@app.route("/downloads")
-def download_page():
-    # Список файлов для скачивания
-    results = [
-        'Gesamtinvoiceinfo.xlsx', 
-        'Invoiceinfo.xlsx', 
-        'Rechnungsprüfung.xlsx', 
-        'Validierung.xlsx'
-    ]
-    return render_template("download.html", results=results)
-
-
-@app.route("/download/<filename>")
-def download_file(filename):
-    file_path = os.path.join(BASE_DIR, filename)
-    if os.path.exists(file_path):
-        return send_file(file_path, as_attachment=True)
-    else:
-        return "Datei nicht gefunden", 404
+    return render_template('index.html')
 
 
 if __name__ == '__main__':
