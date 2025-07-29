@@ -5,7 +5,7 @@ import numpy as np
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('month', nargs='?', default='January', help='Monat für Filterung')  # Необязательный аргумент
+    parser.add_argument('month', nargs='?', default='January', help='Monat für Filterung') 
     parser.add_argument('--recl', default='recl.xlsx', help='Pfad zur recl.xlsx Datei')
     parser.add_argument('--grp', default='grp.xlsx', help='Pfad zur grp.xlsx Datei')
     return parser.parse_args()
@@ -83,7 +83,7 @@ if args.month and len(filtered_rows) > 0:
             errors='coerce'
         )
         
-        # Wenn nicht alle Daten erkannt wurden, versuche spezifische Formate
+        # Wenn nicht alle Daten erkannt wurden, wir versuchen spezifische Formate
         if date_series.notna().sum() < len(filtered_rows) * 0.5:  # Wenn weniger als 50% erkannt
             for fmt in date_formats:
                 try:
@@ -106,7 +106,7 @@ if args.month and len(filtered_rows) > 0:
             print(f"Verfügbare Monate in den Daten: {available_months}")
             
 
-            # Prüfe ob der gewünschte Monat in den Daten vorhanden ist
+            # Prüfen ob der gewünschte Monat in den Daten vorhanden ist
             if month_number not in available_months:
                 print(f"ACHTUNG: Monat {args.month} ({month_number}) ist in den Daten nicht vorhanden!")
             
