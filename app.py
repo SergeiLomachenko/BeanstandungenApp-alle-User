@@ -1,10 +1,9 @@
 import os
 import subprocess
 import sys
-from flask import Flask, render_template, request, redirect, flash, url_for, send_file, after_this_request
+from flask import Flask, render_template, request, redirect, flash, url_for, send_file
 import tempfile
 import shutil
-import uuid
 
 app = Flask(__name__)
 app.secret_key = 'dein_geheimer_schluessel'
@@ -12,7 +11,6 @@ app.secret_key = 'dein_geheimer_schluessel'
 BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
 LOG_FILE   = os.path.join(BASE_DIR, 'analysis.log')
 
-# Создаем только директорию для логов
 os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
 
 
@@ -60,22 +58,28 @@ def run_analysis_in_temp_dir(month: str, recl_file_path: str, grp_file_path: str
         log("Subprocess-Fehler: " + str(e))
         return None
 
-    # Ergebnisdatei finden und umbenennen
-    src = os.path.join(temp_dir, 'file2_filtered.xlsx')
+    # Ergebnisdatei finden (jetzt nur eine Datei mit zwei Registerkarten)
     result_filename = f'Ergebnis_{month}.xlsx'
-    dst = os.path.join(temp_dir, result_filename)
-
-    if os.path.exists(src):
-        try:
-            os.rename(src, dst)
-            log(f"Datei erstellt: {dst}")
-            return result_filename
-        except Exception as e:
-            log("Fehler beim Umbenennen: " + str(e))
-            return None
+    src_result = os.path.join(temp_dir, result_filename)
+    
+    if os.path.exists(src_result):
+        log(f"Ergebnisdatei erstellt: {src_result}")
+        return result_filename
     else:
-        log("file2_filtered.xlsx fehlt in temp_dir")
-        return None
+        # Falls die Datei unter anderem Namen erstellt wurde
+        src_main = os.path.join(temp_dir, 'file2_filtered.xlsx')
+        if os.path.exists(src_main):
+            dst_result = os.path.join(temp_dir, result_filename)
+            try:
+                os.rename(src_main, dst_result)
+                log(f"Datei umbenannt: {dst_result}")
+                return result_filename
+            except Exception as e:
+                log("Fehler beim Umbenennen der Datei: " + str(e))
+                return None
+    
+    log("Keine Ergebnisdatei gefunden")
+    return None
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -91,7 +95,6 @@ def index():
 
         # Erstelle ein temporäres Verzeichnis für diese Anfrage
         temp_dir = tempfile.mkdtemp(prefix=f'analysis_{month}_')
-        log(f"Temporäres Verzeichnis erstellt: {temp_dir}")
         
         try:
             # Speichere hochgeladene Dateien temporär
@@ -108,27 +111,41 @@ def index():
             
             if not result_filename:
                 flash("Analyse fehlgeschlagen. Schau in analysis.log.")
+                # Lösche temporäres Verzeichnis
+                shutil.rmtree(temp_dir)
                 return redirect(request.url)
 
             # Sende Ergebnisdatei
             result_path = os.path.join(temp_dir, result_filename)
             if os.path.exists(result_path):
-                return send_file(
+                response = send_file(
                     result_path, 
                     as_attachment=True, 
                     download_name=result_filename
                 )
+                
+                # Lösche temporäres Verzeichnis nach dem Senden
+                try:
+                    shutil.rmtree(temp_dir)
+                    log(f"Temporäres Verzeichnis gelöscht: {temp_dir}")
+                except Exception as e:
+                    log(f"Fehler beim Löschen des temporären Verzeichnisses: {e}")
+                
+                return response
             else:
                 flash("Ergebnisdatei nicht gefunden.")
+                shutil.rmtree(temp_dir)
                 return redirect(request.url)
                 
-        finally:
-            # Lösche temporäres Verzeichnis und alle Dateien darin
+        except Exception as e:
+            # Im Fehlerfall temporäres Verzeichnis löschen
             try:
                 shutil.rmtree(temp_dir)
-                log(f"Temporäres Verzeichnis gelöscht: {temp_dir}")
-            except Exception as e:
-                log(f"Fehler beim Löschen des temporären Verzeichnisses: {e}")
+            except:
+                pass
+            log(f"Fehler bei der Verarbeitung: {e}")
+            flash("Ein Fehler ist aufgetreten. Schau in analysis.log.")
+            return redirect(request.url)
 
     return render_template('index.html')
 

@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Ergebnisse herunterladen</title>
+  <title>Dateien herunterladen</title>
   <style>
     body {
       background: #f9f9f9;
@@ -21,38 +21,40 @@
       color: #333;
       margin-bottom: 20px;
     }
-    a.button {
+    .button {
       display: inline-block;
       margin: 10px;
-      padding: 10px 20px;
-      background: #28a745;
+      padding: 12px 24px;
+      background: #007bff;
       color: #fff;
       text-decoration: none;
       border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
     }
-    a.button:hover {
-      background: #218838;
+    .button:hover {
+      background: #0056b3;
+    }
+    p {
+      color: #666;
+      margin: 15px 0;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Ergebnisse der Verarbeitung</h1>
-    <p>Falls der automatische Download nicht startet, klicken Sie bitte auf die folgenden Schaltflächen:</p>
-    {% for file in results %}
-      <a class="button" href="{{ url_for('download_file', filename=file) }}">{{ file }}</a>
-    {% endfor %}
+    <h1>🎉 Analyse abgeschlossen!</h1>
+    <p>Ihre Ergebnisdatei mit zwei Registerkarten ist bereit:</p>
+    
+    <a class="button" href="{{ url_for('download_file', filename=filename) }}">
+      📊 Ergebnis_{{ month }}.xlsx herunterladen
+    </a>
+    
+    <p><strong>In der Datei enthalten:</strong></p>
+    <p>📁 Registerkarte "Alle" - Gefilterte Daten<br>
+       📈 Registerkarte "Hauptthema Analyse Ergebnis" - Statistik</p>
+    
+    <p><small>Die Datei wird nach dem Download automatisch gelöscht.</small></p>
   </div>
-  <!-- <script>
-    window.onload = function() {
-      {% for file in results %}
-        var link = document.createElement('a');
-        link.href = "{{ url_for('download_file', filename=file) }}";
-        link.download = "";
-        document.body.appendChild(link);
-        link.click();
-      {% endfor %}
-    };
-  </script> -->
 </body>
 </html>
