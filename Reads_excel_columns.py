@@ -33,7 +33,7 @@ df_no_rows = df_raw.iloc[3:].reset_index(drop=True)
 
 # 3. Spalten entfernen:
 #    - die ersten 4 Spalten (0–3)
-#    - zusätzlich Spalten 11, 14, 15, 16, 17, 21, 22, 23, 24, 25
+#    - zusätzlich Spalten 11, 14, 15, 17, 21, 22, 23, 24, 25
 #    - sowie Spalten 27 bis 41 (inklusive)
 cols_to_drop = [0, 1, 2, 3,
                 11, 14, 15, 17,
@@ -49,7 +49,7 @@ header_row = df_processed.iloc[[0]]
 data_rows  = df_processed.iloc[1:]
 
 #    – Nur Zeilen, in denen Spalte 18 == "Einsteller"
-#      UND Spalte 7 mit "AG" beginnt
+#      UND Spalte 7 mit "AG" beginnt das heißt AMAG User
 mask = (
     (data_rows[18] == 'Einsteller') &
     (data_rows[7].astype(str).str.startswith('AG')) &
@@ -141,17 +141,17 @@ for col_idx in (0, 6):
         errors='coerce'
     ).dt.date
 
-# 6. ERGEBNIS IN EINER EXCEL-DATEI MIT MEHREREN REGISTERKARTEN SPEICHERN
+# 6. Ergebnis in einer Excel-Datei mit mehreren Registerkarten speichern
 result_filename = f'Ergebnis_{args.month}.xlsx'
 
 try:
     # Erste Registerkarte: "Alle" - die gefilterten Daten
+    sheet_name = f'Alle_{args.month}'
     with pd.ExcelWriter(result_filename, engine='openpyxl') as writer:
-        df_final.to_excel(writer, sheet_name='Alle', index=False, header=False)
+        df_final.to_excel(writer, sheet_name=sheet_name, index=False, header=False)
     
         # Greifen auf das Worksheet-Objekt zu
-        worksheet_alle = writer.sheets['Alle']
-        # Setzen die Breite auf das 3-fache der Standardbreite
+        worksheet_alle = writer.sheets[sheet_name]
         # Standardbreite ist oft ~8.43, wir setzen z.B. 25
         worksheet_alle.column_dimensions['A'].width = 15
         worksheet_alle.column_dimensions['B'].width = 10
@@ -175,7 +175,7 @@ except Exception as e:
     import traceback
     traceback.print_exc()
 
-# 7. Erledigt und Offen
+# 7. Erledigt und Offen excel-sheets 
 try:
     print(f"\n=== Erledigt und Offen Filterung ===")
     
@@ -205,12 +205,14 @@ try:
         offen_final = pd.concat([header, offen_data], ignore_index=True)
 
         # Registerkarten hinzufügen (zweite und dritte Position)
+        sheet_name_e = f'Erledigt_{args.month}'
+        sheet_name_o = f'Offen_{args.month}'
         with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a') as writer:
-            erledigt_final.to_excel(writer, sheet_name='Erledigt', index=False, header=False)
-            offen_final.to_excel(writer, sheet_name='Offen', index=False, header=False)
+            erledigt_final.to_excel(writer, sheet_name=sheet_name_e, index=False, header=False)
+            offen_final.to_excel(writer, sheet_name=sheet_name_o, index=False, header=False)
 
             # Greifen auf das Worksheet-Objekt zu
-            worksheet_erledigt = writer.sheets['Erledigt']
+            worksheet_erledigt = writer.sheets[sheet_name_e]
 
             worksheet_erledigt.column_dimensions['A'].width = 15
             worksheet_erledigt.column_dimensions['B'].width = 10
@@ -229,8 +231,8 @@ try:
 
 
             # Greifen auf das Worksheet-Objekt zu
-            worksheet_offen = writer.sheets['Offen']
-            
+            worksheet_offen = writer.sheets[sheet_name_o]
+
             worksheet_offen.column_dimensions['A'].width = 15
             worksheet_offen.column_dimensions['B'].width = 10
             worksheet_offen.column_dimensions['C'].width = 15
@@ -256,7 +258,7 @@ except Exception as e:
     import traceback
     traceback.print_exc()
 
-# 8. Hauptthema Gruppierung und Analyse - IN ZWEITER REGISTERKARTE
+# 8. Hauptthema Gruppierung und Analyse
 try:
     print(f"\n=== Hauptthema Analyse für {args.month} ===")
     
@@ -311,8 +313,9 @@ try:
             print(hauptthema_analysis.head(15))
 
             # Registerkarte: "Hauptthema Analyse Ergebnis" hinzufügen
+            sheet_name = f'Hauptthema_Analyse_Ergebnis_{args.month}'
             with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a') as writer:
-                hauptthema_analysis.to_excel(writer, sheet_name='Hauptthema Analyse Ergebnis', index=False)
+                hauptthema_analysis.to_excel(writer, sheet_name=sheet_name, index=False)
 
                 from openpyxl.chart import PieChart, Reference
                 from openpyxl.chart.legend import Legend
@@ -324,7 +327,7 @@ try:
 
                 
                 # Greifen auf das Worksheet-Objekt zu
-                worksheet_haupthema = writer.sheets['Hauptthema Analyse Ergebnis']
+                worksheet_haupthema = writer.sheets[sheet_name]
                 
                 worksheet_haupthema.column_dimensions['A'].width = 25
                 worksheet_haupthema.column_dimensions['B'].width = 15
@@ -436,7 +439,7 @@ try:
         print(f"Gültige Daten für Pivot: {len(valid_pivot_data)} Zeilen")
         
         if len(valid_pivot_data) > 0:
-            # Erstelle die Pivot-Tabelle
+            # Erstellen die Pivot-Tabelle
             # Werte: Anzahl der Zeilen (size)
             # Index: Hauptthema
             # Columns: Einsteller
@@ -451,17 +454,17 @@ try:
                 sort=False # Reihenfolge wie im Original
             )
             
-            # Sortiere die Zeilen nach Gesamtanzahl (absteigend)
-            # Berechne die Summe pro Zeile *bevor* die Gesamtzeile hinzugefügt wird
+            # Sortieren die Zeilen nach Gesamtanzahl (absteigend)
+            # Berechnen die Summe pro Zeile *bevor* die Gesamtzeile hinzugefügt wird
             row_totals = pivot_table.sum(axis=1)
             
-            # Füge die Gesamt-Spalte hinzu
+            # Fügen die Gesamt-Spalte hinzu
             pivot_table['Gesamt'] = row_totals
             
-            # Sortiere die Tabelle nach der Gesamt-Spalte (absteigend)
+            # Sortieren die Tabelle nach der Gesamt-Spalte (absteigend)
             pivot_table_sorted = pivot_table.sort_values(by='Gesamt', ascending=False)
             
-            # Füge eine Summenzeile am Ende hinzu
+            # Fügen eine Summenzeile am Ende hinzu
             column_totals = pivot_table_sorted.sum(axis=0)
             column_totals.name = 'Gesamt'
             pivot_table_final = pd.concat([pivot_table_sorted, column_totals.to_frame().T])
@@ -470,11 +473,12 @@ try:
             print(pivot_table_final.head(10))
             
             # Letzte Registerkarte: "Pivot Einsteller Hauptthema" hinzufügen
+            sheet_name = f'Pivot_Einsteller_Hauptthema_{args.month}'
             with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-                pivot_table_final.to_excel(writer, sheet_name='Pivot Einsteller Hauptthema')
+                pivot_table_final.to_excel(writer, sheet_name=sheet_name)
 
                 # Greifen auf das Worksheet-Objekt zu
-                worksheet_haupthema = writer.sheets['Pivot Einsteller Hauptthema']
+                worksheet_haupthema = writer.sheets[sheet_name]
                 
                 worksheet_haupthema.column_dimensions['A'].width = 25
             
@@ -484,7 +488,7 @@ try:
             
         else:
             print("Keine gültigen Daten für Pivot-Erstellung gefunden")
-            # Erstelle eine leere Tabelle mit passendem Namen
+            # Erstellen eine leere Tabelle mit passendem Namen
             empty_pivot = pd.DataFrame({'Hinweis': ['Keine Daten für Pivot-Tabelle verfügbar']})
             with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
                 empty_pivot.to_excel(writer, sheet_name='Pivot Einsteller Hauptthema', index=False)
@@ -492,7 +496,7 @@ try:
     else:
         print("Nicht genügend Daten oder Spalten für Pivot-Erstellung")
         print(f"Verfügbare Zeilen: {len(df_final)}, Verfügbare Spalten: {len(df_final.columns) if len(df_final) > 0 else 0}")
-        # Erstelle eine leere Tabelle mit passendem Namen
+        # Erstellen eine leere Tabelle mit passendem Namen
         empty_pivot = pd.DataFrame({'Hinweis': ['Nicht genügend Spalten für Pivot-Tabelle']})
         with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
             empty_pivot.to_excel(writer, sheet_name='Pivot Einsteller Hauptthema', index=False)
@@ -513,16 +517,15 @@ print(f"Verfügbare Spalten in df_processed_grp nach Löschen: {list(df_processe
 print("Ohne ausgewählte Spalten: grp_processed.xlsx")
 
 # 11. Filtern:
-#    – Die erste Zeile (Header) unberührt lassen
+#    Die erste Zeile (Header) unberührt lassen
 header_row_grp = df_processed_grp.iloc[[0]]
 data_rows_grp  = df_processed_grp.iloc[1:]
 
-# Debug: Проверьте структуру данных
 print(f"Verfügbare Spalten in df_processed_grp: {list(df_processed_grp.columns)}")
 print(f"Erste Zeile der Daten:")
 print(data_rows_grp.iloc[0] if len(data_rows_grp) > 0 else "Keine Daten")
 
-#    – Filtern nach Bedingungen (passen Sie die Spaltenpositionen an)
+# Filtern nach Bedingungen (passen Sie die Spaltenpositionen an)
 # Beispiel: Angenommen, nach dem Löschen ist:
 # Spalte 0: 'Verkauft'/anderer Wert
 # Spalte 1: 'AG...'
@@ -604,12 +607,13 @@ df_final_grp = pd.concat([header_row_grp, filtered_rows_grp], ignore_index=True)
 # 13. Ergebnis Gruppenreporting speichern
 try:
     # Hinzufügen zum bestehenden Excel-File
+    sheet_name = f'Gruppenreporting_{args.month}'
     with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-        df_final_grp.to_excel(writer, sheet_name='Gruppenreporting', index=False, header=False)
+        df_final_grp.to_excel(writer, sheet_name=sheet_name, index=False, header=False)
 
         # Greifen auf das Worksheet-Objekt zu
-        worksheet_gruppenreporting = writer.sheets['Gruppenreporting']
-        # Standardbreite ist oft ~8.43, wir setzen z.B. 25
+        worksheet_gruppenreporting = writer.sheets[sheet_name]
+
         worksheet_gruppenreporting.column_dimensions['A'].width = 15
         worksheet_gruppenreporting.column_dimensions['B'].width = 15
         worksheet_gruppenreporting.column_dimensions['C'].width = 35
@@ -624,7 +628,7 @@ except Exception as e:
     import traceback
     traceback.print_exc()
 
-# 14. Verkaufsstatistik nach User erstellen Gruppenreporting
+# 14. Verkaufsstatistik nach User erstellen, Gruppenreporting
 try:
     print(f"\n=== Verkaufsstatistik nach User ===")
     
@@ -669,18 +673,19 @@ try:
             'Verkauft': [total_sales]
         })
         
-        # Kombiniere die Ergebnisse mit der Gesamtzeile
+        # Kombinieren die Ergebnisse mit der Gesamtzeile
         sales_analysis = pd.concat([user_counts, gesamt_row], ignore_index=True)
         
         print("Verkaufsstatistik (Top 10):")
         print(sales_analysis.head(10))
         
         # Registerkarte hinzufügen
+        sheet_name = f'Verkäufe_nach_User_{args.month}'
         with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-            sales_analysis.to_excel(writer, sheet_name='Verkäufe nach User', index=False)
+            sales_analysis.to_excel(writer, sheet_name=sheet_name, index=False)
 
             # Greifen auf das Worksheet-Objekt zu
-            worksheet_user = writer.sheets['Verkäufe nach User']
+            worksheet_user = writer.sheets[sheet_name]
             # Standardbreite ist oft ~8.43, wir setzen z.B. 25
             worksheet_user.column_dimensions['A'].width = 15
             worksheet_user.column_dimensions['B'].width = 15
@@ -708,7 +713,7 @@ except Exception as e:
 try:
     print(f"\n=== User Regionen Tabelle erstellen ===")
     
-    # Erstelle DataFrame mit den User-Regionen Daten
+    # Erstellen DataFrame mit den User-Regionen Daten
     user_regionen_data = [
         ['AG0001', '5116', 'Mitte', 'Schiznach-Bad'],
         ['AG0127', '4310', 'Mitte', 'Rheinfelden'],
@@ -776,7 +781,7 @@ try:
         ['AG6782', '8038', 'Mitte', 'Wollishofen']
     ]
     
-    # Erstelle DataFrame
+    # Erstellen DataFrame
     df_user_regionen = pd.DataFrame(user_regionen_data, columns=['User', 'PLZ', 'Region', 'Stadort'])
     
     # Registerkarte hinzufügen
@@ -807,31 +812,31 @@ try:
     # Überprüfen, ob alle benötigten Daten vorhanden sind
     if 'df_user_regionen' in locals() and 'df_final' in locals() and 'sales_analysis' in locals():
         
-        # Kopiere die User-Regionen-Daten als Basis
+        # Kopieren die User-Regionen-Daten als Basis
         kurzuebersicht = df_user_regionen.copy()
         
         # Spalte "Beanstandungen" hinzufügen
         # Für jeden User (Spalte 0 in df_user_regionen) zähle die Einträge in df_final (Spalte 3)
-        # Beginne ab der zweiten Zeile (ohne Header)
+        # Beginnen ab der zweiten Zeile (ohne Header)
         beanstandungen_counts = df_final.iloc[1:, 3].value_counts()  
         
-        # Erstelle ein Dictionary für schnelle Suche
+        # Erstellen ein Dictionary für schnelle Suche
         beanstandungen_dict = beanstandungen_counts.to_dict()
         
-        # Füge die Spalte "Beanstandungen" hinzu
+        # Fügen die Spalte "Beanstandungen" hinzu
         kurzuebersicht['Beanstandungen'] = kurzuebersicht['User'].map(beanstandungen_dict).fillna(0).astype(int)
         
         # Spalte "Verkauft" aus sales_analysis hinzufügen
-        # Erstelle ein Dictionary aus sales_analysis (User -> Verkauft)
+        # Erstellen ein Dictionary aus sales_analysis (User -> Verkauft)
         verkauft_dict = sales_analysis.set_index('User')['Verkauft'].to_dict()
-        # Entferne die "Gesamt"-Zeile aus dem Dictionary, falls vorhanden
+        # Entfernen die "Gesamt"-Zeile aus dem Dictionary, falls vorhanden
         verkauft_dict.pop('Gesamt', None)
         
-        # Füge die Spalte "Verkauft" hinzu
+        # Fügen die Spalte "Verkauft" hinzu
         kurzuebersicht['Verkauft'] = kurzuebersicht['User'].map(verkauft_dict).fillna(0).astype(int)
         
         # Spalte "Beanstandungsquote(%)" hinzufügen
-        # Vermeide Division durch Null
+        # Vermeiden Division durch Null
         kurzuebersicht['Beanstandungsquote(%)'] = np.where(
             kurzuebersicht['Verkauft'] > 0,
             (kurzuebersicht['Beanstandungen'] / kurzuebersicht['Verkauft'] * 100).round(2),
@@ -854,10 +859,10 @@ try:
             ]
         })
         
-        # Kombiniere die Daten mit der Gesamtzeile
+        # Kombinieren die Daten mit der Gesamtzeile
         kurzuebersicht_final = pd.concat([kurzuebersicht, gesamt_row], ignore_index=True)
         
-        # Füge die Registerkarte zur Excel-Datei hinzu
+        # Fügen die Registerkarte zur Excel-Datei hinzu
         sheet_name = f'Kurzübersicht_AMAG_{args.month}'
         with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
             kurzuebersicht_final.to_excel(writer, sheet_name=sheet_name, index=False)
@@ -879,7 +884,7 @@ try:
         
     else:
         print("Nicht alle benötigten Daten sind verfügbar für die Kurzübersicht")
-        # Erstelle eine leere Registerkarte mit einer Fehlermeldung
+        # Erstellen eine leere Registerkarte mit einer Fehlermeldung
         error_data = pd.DataFrame({'Fehler': ['Benötigte Daten nicht verfügbar']})
         sheet_name = f'Kurzübersicht_AMAG_{args.month}'
         with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
@@ -897,33 +902,33 @@ try:
     # Überprüfen, ob alle benötigten Daten vorhanden sind
     if ('df_user_regionen' in locals() and 'erledigt_final' in locals() and 'offen_final' in locals() and len(offen_final) > 1):
         
-        # Kopiere die User-Regionen-Daten als Basis
+        # Kopieren die User-Regionen-Daten als Basis
         offene_falle = df_user_regionen.copy()
         
         # Spalte "Beanstandungen" hinzufügen
         # Für jeden User (Spalte 0 in df_user_regionen) zähle die Einträge in df_final (Spalte 3)
-        # Beginne ab der zweiten Zeile (ohne Header)
+        # Beginnen ab der zweiten Zeile (ohne Header)
         abgeschlossene_counts = erledigt_final.iloc[1:, 3].value_counts()  
         
-        # Erstelle ein Dictionary für schnelle Suche
+        # Erstellen ein Dictionary für schnelle Suche
         abgeschlossene_dict = abgeschlossene_counts.to_dict()
         
-        # Füge die Spalte "Beanstandungen" hinzu
+        # Fügen die Spalte "Beanstandungen" hinzu
         offene_falle['Abgeschlossene Fälle'] = offene_falle['User'].map(abgeschlossene_dict).fillna(0).astype(int)
         
-        # Spalte "Verkauft"  hinzufügen
+        # Spalte "Verkauft" hinzufügen
         offene_counts = offen_final.iloc[1:, 3].value_counts()  
         offene_dict = offene_counts.to_dict()
         
-        # Füge die Spalte "Verkauft" hinzu
+        # Fügen die Spalte "Verkauft" hinzu
         offene_falle['Offene Fälle'] = offene_falle['User'].map(offene_dict).fillna(0).astype(int)
 
-        # Spalte "Begründung" hinzufügen ---
-        # Extrahiereт die Datenzeilen aus offen_final (ohne Header)
+        # Spalte "Begründung" hinzufügen
+        # Extrahieren die Datenzeilen aus offen_final (ohne Header)
         offen_data_rows = offen_final.iloc[1:]
         
-        # Gruppiere nach User (Spalte 3 in offen_final) und sammle eindeutige Begründungen (Spalte 9 in offen_final)
-        # Verwende dropna=False, um auch leere Begründungen zu berücksichtigen, falls nötig
+        # Gruppieren nach User (Spalte 3 in offen_final) und sammlen eindeutige Begründungen (Spalte 9 in offen_final)
+        # Verwenden dropna=False, um auch leere Begründungen zu berücksichtigen, falls nötig
         begruendungen_grouped = offen_data_rows.groupby(offen_data_rows.iloc[:, 3])[offen_data_rows.columns[9]].apply(
             lambda x: '  \n \n'.join(sorted(x.dropna().astype(str).unique())) # Verwenden '  ' (zwei Leerzeichen) als Trenner
         )
@@ -931,7 +936,7 @@ try:
         # Erstellen ein Dictionary aus der Gruppierung
         begruendungen_dict = begruendungen_grouped.to_dict()
 
-        # Füge die Spalte "Begründung" hinzu
+        # Fügen die Spalte "Begründung" hinzu
         offene_falle['Begründung'] = offene_falle['User'].map(begruendungen_dict).fillna('')
 
         # Leere Spalten hinzufügen 
@@ -951,10 +956,10 @@ try:
             'Hängig bei AMAG': ['']  
         })
         
-        # Kombiniere die Daten mit der Gesamtzeile
+        # Kombinieren die Daten mit der Gesamtzeile
         offene_final = pd.concat([offene_falle, gesamt_row], ignore_index=True)
         
-        # Füge die Registerkarte zur Excel-Datei hinzu
+        # Fügen die Registerkarte zur Excel-Datei hinzu
         sheet_name = f'Offene_Fälle_AMAG_{args.month}'
         with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
             offene_final.to_excel(writer, sheet_name=sheet_name, index=False)
@@ -965,15 +970,15 @@ try:
             from openpyxl.utils import get_column_letter
             spalte_begründung_buchstabe = get_column_letter(7)
 
-            # Iteriereт durch alle Zeilen mit Daten in dieser Spalte (beginnend mit Zeile 2, da Zeile 1 der Header ist)
+            # Iterieren durch alle Zeilen mit Daten in dieser Spalte (beginnend mit Zeile 2, da Zeile 1 der Header ist)
             for reihe in range(2, len(offene_final) + 2): # +2 weil: 1-basiert + Header-Zeile
                 zelle = worksheet_offen[f'{spalte_begründung_buchstabe}{reihe}']
-                # Aktiviere den automatischen Zeilenumbruch für diese Zelle
+                # Aktivieren den automatischen Zeilenumbruch für diese Zelle
                 zelle.alignment = openpyxl.styles.Alignment(wrap_text=True, vertical='top')
 
             # Greifen auf das Worksheet-Objekt zu
             worksheet_kurzübersicht = writer.sheets[sheet_name]
-            # Standardbreite ist oft ~8.43, wir setzen z.B. 25
+
             worksheet_offen.column_dimensions['A'].width = 10
             worksheet_offen.column_dimensions['B'].width = 10
             worksheet_offen.column_dimensions['C'].width = 15
@@ -988,7 +993,7 @@ try:
         
     else:
         print("Nicht alle benötigten Daten sind verfügbar für die Offen Fälle")
-        # Erstelle eine leere Registerkarte mit einer Fehlermeldung
+        # Erstellen eine leere Registerkarte mit einer Fehlermeldung
         error_data = pd.DataFrame({'Fehler': ['Benötigte Daten nicht verfügbar']})
         sheet_name = f'Offene_Fälle_AMAG_{args.month}'
         with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
@@ -1007,8 +1012,8 @@ print("2. 'Erledigt' - Nur erledigte Beanstandungen")
 print("3. 'Offen' - Nur offene Beanstandungen")
 print("4. 'Hauptthema Analyse Ergebnis' - Statistische Auswertung")
 print("5. 'Pivot Einsteller Hauptthema' - Kreuztabelle Einsteller x Hauptthema")
-print("6. 'Gruppenreporting'")
-print("7. 'Verkäufe nach User'")
-print("8. 'User Regionen'")
-print("9. 'Kurzübersicht'")
-print("10. 'Offene Fälle'")
+print("6. 'Gruppenreporting' - Die Daten mit der Info über die Verkäufe")
+print("7. 'Verkäufe nach User' - wie viele Fahrzeuge hat jeder AMAG-User verkauft")
+print("8. 'User Regionen' - einfach die Liste mit allen AMAG Usern")
+print("9. 'Kurzübersicht' - die Hauptdatei")
+print("10. 'Offene Fälle' - Alle Beanstandungen, die offen sind")

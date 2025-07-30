@@ -13,12 +13,10 @@ LOG_FILE   = os.path.join(BASE_DIR, 'analysis.log')
 
 os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
 
-
 def log(message: str):
     """Schreibt einen Zeilen-Eintrag in analysis.log."""
     with open(LOG_FILE, 'a', encoding='utf-8') as f:
         f.write(message + '\n')
-
 
 def run_analysis_in_temp_dir(month: str, recl_file_path: str, grp_file_path: str, temp_dir: str) -> str | None:
     """Führt die Analyse in einem temporären Verzeichnis durch."""
@@ -80,7 +78,6 @@ def run_analysis_in_temp_dir(month: str, recl_file_path: str, grp_file_path: str
     
     log("Keine Ergebnisdatei gefunden")
     return None
-
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -148,7 +145,6 @@ def index():
             return redirect(request.url)
 
     return render_template('index.html')
-
 
 if __name__ == '__main__':
     app.run(debug=True)
