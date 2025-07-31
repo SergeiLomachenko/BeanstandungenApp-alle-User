@@ -229,7 +229,6 @@ try:
             worksheet_erledigt.column_dimensions['M'].width = 20
             worksheet_erledigt.column_dimensions['N'].width = 30
 
-
             # Greifen auf das Worksheet-Objekt zu
             worksheet_offen = writer.sheets[sheet_name_o]
 
@@ -1003,7 +1002,6 @@ except Exception as e:
     print(f"Fehler beim Erstellen der Offene Fälle: {e}")
     import traceback
     traceback.print_exc()
-
 
 print(f"\nFertig! Ergebnis gespeichert in: {result_filename}")
 print("Verfügbare Registerkarten:")
