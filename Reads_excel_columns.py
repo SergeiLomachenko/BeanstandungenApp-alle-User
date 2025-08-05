@@ -6,7 +6,8 @@ import openpyxl
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('month', nargs='?', default='January', help='Monat für Filterung') 
+    parser.add_argument('--month', type=str, help='Monat für Filterung (optional)')
+    parser.add_argument('--username', type=str, help='Filter by username')
     parser.add_argument('--recl', default='recl.xlsx', help='Pfad zur recl.xlsx Datei')
     parser.add_argument('--grp', default='grp.xlsx', help='Pfad zur grp.xlsx Datei')
     return parser.parse_args()
@@ -49,10 +50,15 @@ header_row = df_processed.iloc[[0]]
 data_rows  = df_processed.iloc[1:]
 
 #    – Nur Zeilen, in denen Spalte 18 == "Einsteller"
-#      UND Spalte 7 mit "AG" beginnt das heißt AMAG User
+# Bedingung für username: nur wenn args.username gesetzt ist
+if args.username:
+    username_condition = (data_rows[7].astype(str) == args.username)
+else:
+    username_condition = True  # Wenn kein Username gegeben, alle Zeilen durchlassen
+
 mask = (
     (data_rows[18] == 'Einsteller') &
-    (data_rows[7].astype(str).str.startswith('AG')) &
+    (data_rows[7].astype(str) == args.username) &
     (data_rows[19] != 'Wurde abgelehnt'))
 
 filtered_rows = data_rows[mask]
@@ -142,7 +148,8 @@ for col_idx in (0, 6):
     ).dt.date
 
 # 6. Ergebnis in einer Excel-Datei mit mehreren Registerkarten speichern
-result_filename = f'Ergebnis_{args.month}.xlsx'
+safe_month = args.month.strip() if args.month and args.month.strip() else "All"
+result_filename = f'Ergebnis_{safe_month}.xlsx'
 
 try:
     # Erste Registerkarte: "Alle" - die gefilterten Daten
@@ -375,6 +382,7 @@ try:
 
                 pie.dataLabels = DataLabelList()
                 pie.dataLabels.showSerName   = False
+                # pie.dataLabels.showVal = True
                 pie.dataLabels.showPercent   = True
                 pie.dataLabels.numFmt         = '0.00%'
                 pie.dataLabels.showLegendKey = False
@@ -527,11 +535,10 @@ print(data_rows_grp.iloc[0] if len(data_rows_grp) > 0 else "Keine Daten")
 # Filtern nach Bedingungen (passen Sie die Spaltenpositionen an)
 # Beispiel: Angenommen, nach dem Löschen ist:
 # Spalte 0: 'Verkauft'/anderer Wert
-# Spalte 1: 'AG...'
 if len(data_rows_grp.columns) > 1:
     mask_grp = (
         (data_rows_grp.iloc[:, 0] == 'Verkauft') &
-        (data_rows_grp.iloc[:, 1].astype(str).str.startswith('AG'))
+        (data_rows_grp.iloc[:, 1].astype(str) == args.username)
     )
     filtered_rows_grp = data_rows_grp[mask_grp]
     print(f"Nach Filter: {len(filtered_rows_grp)} Zeilen")
@@ -714,74 +721,35 @@ try:
     
     # Erstellen DataFrame mit den User-Regionen Daten
     user_regionen_data = [
-        ['AG0001', '5116', 'Mitte', 'Schiznach-Bad'],
-        ['AG0127', '4310', 'Mitte', 'Rheinfelden'],
-        ['AG0129', '4410', 'West', 'Liestal'],
-        ['AG0133', '4058', 'West', 'Kleinbasel'],
-        ['AG0136', '4133', 'West', 'Pratteln'],
-        ['AG0137', '4132', 'West', 'Muttenz'],
-        ['AG0140', '2555', 'West', 'Biel'],
-        ['AG0150', '9470', 'Ost', 'Buchs'],
-        ['AG0151', '9490', 'Ost', 'Vaduz'],
-        ['AG0155', '4528', 'West', 'Solothurn'],
-        ['AG0165', '7000', 'Ost', 'Chur'],
-        ['AG0173', '6512', 'Mitte', 'Giubiasco'],
-        ['AG0190', '7270', 'Ost', 'Davos'],
-        ['AG0200', '8500', 'Ost', 'Frauenfeld'],
-        ['AG0220', '1752', 'Romandie', 'Fribourg'],
-        ['AG0227', '1630', 'Romandie', 'Bulle'],
-        ['AG0232', '3280', 'West', 'Murten'],
-        ['AG0244', '1197', 'Romandie', 'Nyon'],
-        ['AG0248', '1260', 'Romandie', 'Nyon Champs Colin'],
-        ['AG0260', '8280', 'Ost', 'Kreuzlingen'],
-        ['AG0272', '8570', 'Ost', 'Weinfelden'],
-        ['AG0289', '1219', 'Romandie', 'Genève'],
-        ['AG0290', '3053', 'West', 'Occ. Münchenbuchsee'],
-        ['AG0302', '1032', 'Romandie', 'Crissier'],
-        ['AG0348', '1163', 'Romandie', 'Etoy'],
-        ['AG0357', '9626', 'Mitte', 'Lugano'],
-        ['AG0376', '6280', 'Mitte', 'Sursee'],
-        ['AG0380', '6035', 'Mitte', 'Buchrain'],
-        ['AG0399', '6215', 'Mitte', 'Beromünster'],
-        ['AG0400', '6010', 'Mitte', 'Luzern'],
-        ['ag0437', '4665', 'Mitte', 'Occ. Oftringen'],
-        ['AG0450', '8200', 'Ost', 'Schaffhausen'],
-        ['AG0460', '4657', 'West', 'Dulliken'],
-        ['AG0464', '4665', 'Mitte', 'Oftringen'],
-        ['AG0523', '9435', 'Ost', 'Heerbrugg'],
-        ['AG0540', '5442', 'Mitte', 'Baden'],
-        ['AG0570', '3604', 'West', 'Thun'],
-        ['AG0620', '8406', 'Ost', 'Occ. Winterthur'],
-        ['AG0650', '8008', 'Ost', 'Utoquai'],
-        ['AG0655', '6340', 'Mitte', 'Sihlbrugg'],
-        ['AG0659', '8051', 'Ost', 'Zürich'],
-        ['AG0673', '8003', 'Mitte', 'Zürich Badenerstr.'],
-        ['AG0674', '5430', 'Mitte', 'Wettingen'],
-        ['AG0680', '8610', 'Ost', 'Uster'],
-        ['AG0690', '8302', 'Ost', 'Kloten'],
-        ['AG0698', '8600', 'Ost', 'Autowelt Audi'],
-        ['AG0698SE', '8600', 'Ost', 'Autowelt Seat'],
-        ['AG0698VW', '8600', 'Ost', 'Autowelt VW'],
-        ['AG0710', '8048', 'Mitte', 'Letzigrund'],
-        ['AG0739', '8810', 'Mitte', 'Horgen'],
-        ['AG0760', '8846', 'Mitte', 'Jona'],
-        ['AG0781', '8604', 'Ost', 'Volketswil'],
-        ['AG0788', '8952', 'Mitte', 'Schlieren'],
-        ['AG0790', '8184', 'Ost', 'Bülach'],
-        ['AG3346', '3073', 'West', 'Gümligen'],
-        ['AG3537', '5000', 'Mitte', 'Aarau'],
-        ['AG3690', '6850', 'Mitte', 'Mendrisio'],
-        ['AG6114', '1845', 'Romandie', 'Villeneuve'],
-        ['AG6136', '1214', 'Romandie', 'Vernier'],
-        ['AG6140', '2504', 'West', 'Längfeldweg'],
-        ['AG6198', '8048', 'Mitte', 'Zürich'],
-        ['AG6601', '3032', 'West', 'Emmen'],
-        ['AG6772', '8907', 'Mitte', 'Wettswil'],
-        ['AG6782', '8038', 'Mitte', 'Wollishofen']
+        ['Allianz2', '8010', 'Ost', 'Zürich'], 
+        ['Alpher', '8157', 'Mitte', 'Dielsdorf'], 
+        ['arval1', '6343', 'Mitte', 'Risch-Rotkreuz'], 
+        ['bankno', '8810', 'Mitte', 'Horgen'],
+        ['BMWLea', '8157', 'Mitte', 'Dielsdorf'],
+        ['gautsc', '4900', 'West', 'Langenthal'],
+        ['gemone', '8048', 'Mitte', 'Zürich'],
+        ['leo2810', '1023', 'Romandie', 'Crissier'],
+        ['mosocc', '3030', 'West', 'Bern'],
+        ['RRGLEM', '1024', 'Romandie', 'Ecublens'],
+        ['RRGSIL', '1024', 'Romandie', 'Ecublens'],
+        ['rssavo', '8902', 'Mitte', 'Urdorf'],
+        ['Schweizz', '8610', 'Ost', 'Uster'],
+        ['tesla01', '8001', 'Mitte', 'Zürich'],
+        ['SixtRAC', '4057', 'West', 'Basel']
     ]
     
-    # Erstellen DataFrame
-    df_user_regionen = pd.DataFrame(user_regionen_data, columns=['User', 'PLZ', 'Region', 'Stadort'])
+        # Erstellen DataFrame
+    df_user_regionen_all = pd.DataFrame(user_regionen_data, columns=['User', 'PLZ', 'Region', 'Stadort'])
+
+    if len(df_user_regionen_all.columns) > 1:
+        mask_f = (
+            (df_user_regionen_all.iloc[:, 0].astype(str) == args.username)
+        )
+        df_user_regionen = df_user_regionen_all[mask_f] 
+        print(f"Nach Filter: {len(df_user_regionen)} Zeilen")
+    else:
+        print("Nicht genügend Spalten für Filter")
+        df_user_regionen = df_user_regionen_all.iloc[0:0]
     
     # Registerkarte hinzufügen
     with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
@@ -806,7 +774,7 @@ except Exception as e:
 
 # 16. Kurzübersicht erstellen
 try:
-    print(f"\n=== Kurzübersicht_AMAG_{args.month} erstellen ===")
+    print(f"\n=== Kurzübersicht_{args.month} erstellen ===")
     
     # Überprüfen, ob alle benötigten Daten vorhanden sind
     if 'df_user_regionen' in locals() and 'df_final' in locals() and 'sales_analysis' in locals():
@@ -862,7 +830,7 @@ try:
         kurzuebersicht_final = pd.concat([kurzuebersicht, gesamt_row], ignore_index=True)
         
         # Fügen die Registerkarte zur Excel-Datei hinzu
-        sheet_name = f'Kurzübersicht_AMAG_{args.month}'
+        sheet_name = f'Kurzübersicht_{args.month}'
         with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
             kurzuebersicht_final.to_excel(writer, sheet_name=sheet_name, index=False)
 
@@ -885,7 +853,7 @@ try:
         print("Nicht alle benötigten Daten sind verfügbar für die Kurzübersicht")
         # Erstellen eine leere Registerkarte mit einer Fehlermeldung
         error_data = pd.DataFrame({'Fehler': ['Benötigte Daten nicht verfügbar']})
-        sheet_name = f'Kurzübersicht_AMAG_{args.month}'
+        sheet_name = f'Kurzübersicht_{args.month}'
         with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
             error_data.to_excel(writer, sheet_name=sheet_name, index=False)
             
@@ -896,7 +864,7 @@ except Exception as e:
 
 # 17. Offene Fälle
 try:
-    print(f"\n=== Offene_Fälle_AMAG_{args.month} erstellen ===")
+    print(f"\n=== Offene_Fälle_{args.month} erstellen ===")
     
     # Überprüfen, ob alle benötigten Daten vorhanden sind
     if ('df_user_regionen' in locals() and 'erledigt_final' in locals() and 'offen_final' in locals() and len(offen_final) > 1):
@@ -959,7 +927,7 @@ try:
         offene_final = pd.concat([offene_falle, gesamt_row], ignore_index=True)
         
         # Fügen die Registerkarte zur Excel-Datei hinzu
-        sheet_name = f'Offene_Fälle_AMAG_{args.month}'
+        sheet_name = f'Offene_Fälle_{args.month}'
         with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
             offene_final.to_excel(writer, sheet_name=sheet_name, index=False)
 
@@ -994,7 +962,7 @@ try:
         print("Nicht alle benötigten Daten sind verfügbar für die Offen Fälle")
         # Erstellen eine leere Registerkarte mit einer Fehlermeldung
         error_data = pd.DataFrame({'Fehler': ['Benötigte Daten nicht verfügbar']})
-        sheet_name = f'Offene_Fälle_AMAG_{args.month}'
+        sheet_name = f'Offene_Fälle_{args.month}'
         with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
             error_data.to_excel(writer, sheet_name=sheet_name, index=False)
             

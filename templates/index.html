@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Dateien hochladen</title>
   <style>
-    .month-select {
+    .month-select, .username-select {
       width: 100%;
       padding: 10px 40px 10px 12px;
       font-size: 16px;
@@ -22,11 +22,11 @@
       background-size: 10px 6px;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
-    .month-select:hover {
+    .month-select:hover, .username-select:hover {
       border-color: #0056b3;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    .month-select:focus {
+    .month-select:focus, .username-select:focus {
       outline: none;
       box-shadow: 0 0 0 3px rgba(0,123,255,0.3);
     }
@@ -99,7 +99,7 @@
     <form action="/" method="post" enctype="multipart/form-data">
       
       <label for="month">Wählen Sie einen Monat:</label>
-      <select name="month" id="month" class="month-select" required>
+      <select name="month" id="month" class="month-select">
         <option value="">Monat auswählen</option>
         <option value="January">January</option>
         <option value="February">February</option>
@@ -115,6 +115,29 @@
         <option value="December">December</option>
       </select>
       
+      <!-- Username field -->
+      <label for="username">Wählen Sie einen Benutzernamen:</label>
+      <select name="username" id="username" class="username-select" required>
+        <option value="">Benutzer auswählen</option>
+        <option value="Schweizz">Schweizz</option>
+        <option value="leo2810">leo2810</option>
+        <option value="RRGLEM">RRGLEM</option>
+        <option value="arval1">arval1</option>
+        <option value="bankno">bankno</option>
+        <option value="alpher">alpher</option>
+        <option value="sixtle">sixtle</option>
+        <option value="Allianz2">Allianz2</option>
+        <option value="mosocc">mosocc</option>
+        <option value="tesla01">tesla01</option>
+        <option value="gemone">gemone</option>
+        <option value="RRGSIL">RRGSIL</option>
+        <option value="gautsc">gautsc</option>
+        <option value="rssavo">rssavo</option>
+        <option value="BMWLea">BMWLea</option>
+        <!-- <option value="">Alle</option>   -->
+        <!-- If empty then would not be filtered -->
+      </select>
+
       <label for="recl">Wählen Sie eine Excel-Datei (Reclamations):</label>
       <div class="file-input-wrapper">
         <button type="button" class="btn-file" 
@@ -135,7 +158,7 @@
         </button>
         <input type="file" id="grp" name="grp"
                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-               onchange="updateFileName('grp')" required>
+               onchange="updateFileName('grp')">
       </div>
       <span id="grp-name" class="file-name"></span>
       
