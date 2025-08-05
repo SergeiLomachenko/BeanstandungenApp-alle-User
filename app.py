@@ -63,7 +63,7 @@ def run_analysis_in_temp_dir(month: str, recl_file_path: str, grp_file_path: str
         return None
 
     # Ergebnisdatei finden (jetzt nur eine Datei mit zwei Registerkarten)
-    safe_month = month.strip() if month and month.strip() else "All"
+    safe_month = month.strip() if month and month.strip() else "Alle_Monate"
     result_filename = f'Ergebnis_{safe_month}.xlsx'
     src_result = os.path.join(temp_dir, result_filename)
     

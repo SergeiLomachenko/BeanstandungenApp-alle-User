@@ -148,12 +148,13 @@ for col_idx in (0, 6):
     ).dt.date
 
 # 6. Ergebnis in einer Excel-Datei mit mehreren Registerkarten speichern
-safe_month = args.month.strip() if args.month and args.month.strip() else "All"
+safe_month = args.month.strip() if args.month and args.month.strip() else "Alle_Monate"
 result_filename = f'Ergebnis_{safe_month}.xlsx'
 
 try:
     # Erste Registerkarte: "Alle" - die gefilterten Daten
-    sheet_name = f'Alle_{args.month}'
+    sheet_name = f'Alle_{safe_month}'
+    # sheet_name = f'Alle_{args.month}'
     with pd.ExcelWriter(result_filename, engine='openpyxl') as writer:
         df_final.to_excel(writer, sheet_name=sheet_name, index=False, header=False)
     
@@ -212,8 +213,9 @@ try:
         offen_final = pd.concat([header, offen_data], ignore_index=True)
 
         # Registerkarten hinzufügen (zweite und dritte Position)
-        sheet_name_e = f'Erledigt_{args.month}'
-        sheet_name_o = f'Offen_{args.month}'
+        safe_month = args.month or "Alle_Monate"
+        sheet_name_e = f'Erledigt_{safe_month}'
+        sheet_name_o = f'Offen_{safe_month}'
         with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a') as writer:
             erledigt_final.to_excel(writer, sheet_name=sheet_name_e, index=False, header=False)
             offen_final.to_excel(writer, sheet_name=sheet_name_o, index=False, header=False)
@@ -319,7 +321,8 @@ try:
             print(hauptthema_analysis.head(15))
 
             # Registerkarte: "Hauptthema Analyse Ergebnis" hinzufügen
-            sheet_name = f'Hauptthema_Analyse_Ergebnis_{args.month}'
+            safe_month = args.month or "Alle_Monate"
+            sheet_name = f'Hauptthema_Analyse_Ergebnis_{safe_month}'
             with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a') as writer:
                 hauptthema_analysis.to_excel(writer, sheet_name=sheet_name, index=False)
 
@@ -480,7 +483,8 @@ try:
             print(pivot_table_final.head(10))
             
             # Letzte Registerkarte: "Pivot Einsteller Hauptthema" hinzufügen
-            sheet_name = f'Pivot_Einsteller_Hauptthema_{args.month}'
+            safe_month = args.month or "Alle_Monate"
+            sheet_name = f'Pivot_Einsteller_Hauptthema_{safe_month}'
             with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
                 pivot_table_final.to_excel(writer, sheet_name=sheet_name)
 
@@ -613,7 +617,8 @@ df_final_grp = pd.concat([header_row_grp, filtered_rows_grp], ignore_index=True)
 # 13. Ergebnis Gruppenreporting speichern
 try:
     # Hinzufügen zum bestehenden Excel-File
-    sheet_name = f'Gruppenreporting_{args.month}'
+    safe_month = args.month or "Alle_Monate"
+    sheet_name = f'Gruppenreporting_{safe_month}'
     with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
         df_final_grp.to_excel(writer, sheet_name=sheet_name, index=False, header=False)
 
@@ -686,7 +691,8 @@ try:
         print(sales_analysis.head(10))
         
         # Registerkarte hinzufügen
-        sheet_name = f'Verkäufe_nach_User_{args.month}'
+        safe_month = args.month or "Alle_Monate"
+        sheet_name = f'Verkäufe_nach_User_{safe_month}'
         with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
             sales_analysis.to_excel(writer, sheet_name=sheet_name, index=False)
 
@@ -830,7 +836,8 @@ try:
         kurzuebersicht_final = pd.concat([kurzuebersicht, gesamt_row], ignore_index=True)
         
         # Fügen die Registerkarte zur Excel-Datei hinzu
-        sheet_name = f'Kurzübersicht_{args.month}'
+        safe_month = args.month or "Alle_Monate"
+        sheet_name = f'Kurzübersicht_{safe_month}'
         with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
             kurzuebersicht_final.to_excel(writer, sheet_name=sheet_name, index=False)
 
@@ -927,7 +934,8 @@ try:
         offene_final = pd.concat([offene_falle, gesamt_row], ignore_index=True)
         
         # Fügen die Registerkarte zur Excel-Datei hinzu
-        sheet_name = f'Offene_Fälle_{args.month}'
+        safe_month = args.month or "Alle_Monate"
+        sheet_name = f'Offene_Fälle_{safe_month}'
         with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
             offene_final.to_excel(writer, sheet_name=sheet_name, index=False)
 
