@@ -316,13 +316,14 @@ try:
             
             # Kombiniere die Ergebnisse mit der Gesamtzeile
             hauptthema_analysis = pd.concat([hauptthema_counts, gesamt_row], ignore_index=True)
+            hauptthema_analysis['Summe'] = hauptthema_analysis['Summe'].astype(int)
             
-            print(f"Hauptthema Analyse Ergebnis:")
+            print(f"Hauptthema Analyse:")
             print(hauptthema_analysis.head(15))
 
             # Registerkarte: "Hauptthema Analyse Ergebnis" hinzufügen
             safe_month = args.month or "Alle_Monate"
-            sheet_name = f'Hauptthema_Analyse_Ergebnis_{safe_month}'
+            sheet_name = f'Hauptthema_Analyse_{safe_month}'
             with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a') as writer:
                 hauptthema_analysis.to_excel(writer, sheet_name=sheet_name, index=False)
 
