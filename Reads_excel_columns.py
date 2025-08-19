@@ -58,7 +58,7 @@ else:
 
 mask = (
     (data_rows[18] == 'Einsteller') &
-    (data_rows[7].astype(str) == args.username) &
+    username_condition &
     (data_rows[19] != 'Wurde abgelehnt'))
 
 filtered_rows = data_rows[mask]
@@ -541,9 +541,14 @@ print(data_rows_grp.iloc[0] if len(data_rows_grp) > 0 else "Keine Daten")
 # Beispiel: Angenommen, nach dem Löschen ist:
 # Spalte 0: 'Verkauft'/anderer Wert
 if len(data_rows_grp.columns) > 1:
+    if args.username:
+        username_condition_gr = (data_rows_grp.iloc[:, 1].astype(str) == args.username)
+    else:
+        username_condition_gr = pd.Series(True, index=data_rows_grp.index)
+
     mask_grp = (
         (data_rows_grp.iloc[:, 0] == 'Verkauft') &
-        (data_rows_grp.iloc[:, 1].astype(str) == args.username)
+        username_condition_gr
     )
     filtered_rows_grp = data_rows_grp[mask_grp]
     print(f"Nach Filter: {len(filtered_rows_grp)} Zeilen")
@@ -725,59 +730,41 @@ except Exception as e:
 # 15. User Regionen Tabelle erstellen
 try:
     print(f"\n=== User Regionen Tabelle erstellen ===")
-    
-    # Erstellen DataFrame mit den User-Regionen Daten
-    user_regionen_data = [
-        ['Allianz2', '8010', 'Ost', 'Zürich'], 
-        ['Alpher', '8157', 'Mitte', 'Dielsdorf'], 
-        ['arval1', '6343', 'Mitte', 'Risch-Rotkreuz'], 
-        ['bankno', '8810', 'Mitte', 'Horgen'],
-        ['BMWLea', '8157', 'Mitte', 'Dielsdorf'],
-        ['gautsc', '4900', 'West', 'Langenthal'],
-        ['gemone', '8048', 'Mitte', 'Zürich'],
-        ['leo2810', '1023', 'Romandie', 'Crissier'],
-        ['mosocc', '3030', 'West', 'Bern'],
-        ['RRGLEM', '1024', 'Romandie', 'Ecublens'],
-        ['RRGSIL', '1024', 'Romandie', 'Ecublens'],
-        ['rssavo', '8902', 'Mitte', 'Urdorf'],
-        ['Schweizz', '8610', 'Ost', 'Uster'],
-        ['tesla01', '8001', 'Mitte', 'Zürich'],
-        ['SixtRAC', '4057', 'West', 'Basel']
-    ]
-    
-        # Erstellen DataFrame
-    df_user_regionen_all = pd.DataFrame(user_regionen_data, columns=['User', 'PLZ', 'Region', 'Stadort'])
 
-    if len(df_user_regionen_all.columns) > 1:
-        mask_f = (
-            (df_user_regionen_all.iloc[:, 0].astype(str) == args.username)
-        )
-        df_user_regionen = df_user_regionen_all[mask_f] 
-        print(f"Nach Filter: {len(df_user_regionen)} Zeilen")
+    # Prüfen, ob die Verkaufsstatistik aus Schritt 14 verfügbar ist
+    if 'sales_analysis' in locals() and not sales_analysis.empty:
+        # Alle eindeutigen User holen, ohne die "Gesamt"-Zeile
+        users = sales_analysis[sales_analysis['User'] != 'Gesamt']['User'].unique()
     else:
-        print("Nicht genügend Spalten für Filter")
-        df_user_regionen = df_user_regionen_all.iloc[0:0]
-    
-    # Registerkarte hinzufügen
+        print("Keine Nutzerdaten aus Verkaufsstatistik verfügbar")
+        users = []
+
+    # Neues DataFrame mit leeren Spalten für PLZ, Region und Standort erstellen
+    df_user_regionen = pd.DataFrame({
+        'User': users,
+        'PLZ': [''] * len(users),       # Spalte für Postleitzahl (leer)
+        'Region': [''] * len(users),    # Spalte für Region (leer)
+        'Stadort': [''] * len(users)    # Spalte für Standort (leer)
+    })
+
+    # Daten in eine neue Registerkarte der bestehenden Excel-Datei schreiben
     with pd.ExcelWriter(result_filename, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
         df_user_regionen.to_excel(writer, sheet_name='User Regionen', index=False)
 
-        # Greifen auf das Worksheet-Objekt zu
-        worksheet_amaguser = writer.sheets['User Regionen']
-        # Standardbreite ist oft ~8.43, wir setzen z.B. 25
-        worksheet_amaguser.column_dimensions['A'].width = 15
-        worksheet_amaguser.column_dimensions['B'].width = 15
-        worksheet_amaguser.column_dimensions['C'].width = 15
-        worksheet_amaguser.column_dimensions['D'].width = 25
-    
+        # Auf das Worksheet-Objekt zugreifen und Spaltenbreiten setzen
+        ws = writer.sheets['User Regionen']
+        ws.column_dimensions['A'].width = 15
+        ws.column_dimensions['B'].width = 15
+        ws.column_dimensions['C'].width = 15
+        ws.column_dimensions['D'].width = 25
+
     print("Registerkarte 'User Regionen' hinzugefügt")
     print(f"Anzahl User: {len(df_user_regionen)}")
-    
+
 except Exception as e:
     print(f"Fehler beim Erstellen der User Regionen Tabelle: {e}")
     import traceback
     traceback.print_exc()
-
 
 # 16. Kurzübersicht erstellen
 try:
